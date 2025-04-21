@@ -1,31 +1,11 @@
 import streamlit as st
-from streamlit_extras.colored_header import colored_header
-from streamlit_extras.let_it_rain import rain
+import numpy as np
+import plotly.graph_objects as go
+from scipy.stats import norm
 
-# --- Page Setup ---
 st.set_page_config(page_title="📊 Options Strategy Wizard", layout="centered")
 
-st.markdown("""
-    <style>
-        .stSelectbox > div > div {
-            font-size: 16px !important;
-        }
-        .stNumberInput > div > div {
-            font-size: 16px !important;
-        }
-        .stButton > button {
-            background-color: #0A75AD;
-            color: white;
-            font-weight: bold;
-            width: 100%;
-        }
-        .block-container {
-            padding-top: 1rem;
-        }
-    </style>
-""", unsafe_allow_html=True)
-
-# --- Strategy Logic ---
+# ----- Strategy Logic -----
 def get_intraday_strategy(strength, vega, theta, oi):
     if strength < 1:
         if vega == "Bullish" and theta == "Bullish":
@@ -72,29 +52,78 @@ def get_positional_strategy(strength, vega, theta, oi):
         else:
             return "⛔ Avoid Positional Entry - Weak Trend"
 
-# --- Main App UI ---
-colored_header(label="📊 OPTIONS STRATEGY WIZARD", description="Get best Intraday & Positional strategy based on market sentiment", color_name="blue-70")
+# ----- Greeks Calculation -----
+def bs_greeks(option_type, S, K, T, r, sigma):
+    T = T / 365
+    d1 = (np.log(S / K) + (r + sigma ** 2 / 2.) * T) / (sigma * np.sqrt(T))
+    d2 = d1 - sigma * np.sqrt(T)
+    
+    if option_type == 'Call':
+        delta = norm.cdf(d1)
+    else:
+        delta = -norm.cdf(-d1)
 
-index = st.selectbox("📍 Select Index", ["NIFTY", "BANKNIFTY", "SENSEX"])
-strength = st.number_input("📊 Enter Strength", min_value=0.0, max_value=100.0, step=0.1, format="%.2f")
-vega = st.selectbox("🧠 Vega Sentiment", ["Bullish", "Sideways", "Bearish"])
-theta = st.selectbox("⌛ Theta Sentiment", ["Bullish", "Sideways", "Bearish"])
-oi = st.selectbox("📦 Open Interest (OI)", ["Bullish", "Sideways", "Bearish"])
+    gamma = norm.pdf(d1) / (S * sigma * np.sqrt(T))
+    vega = S * norm.pdf(d1) * np.sqrt(T) / 100
+    theta = (-S * norm.pdf(d1) * sigma / (2 * np.sqrt(T)) -
+             r * K * np.exp(-r * T) * norm.cdf(d2 if option_type == 'Call' else -d2)) / 365
+    rho = K * T * np.exp(-r * T) * (norm.cdf(d2) if option_type == 'Call' else -norm.cdf(-d2)) / 100
+    
+    return round(delta,4), round(gamma,4), round(vega,4), round(theta,4), round(rho,4)
 
-if st.button("🎯 Suggest Strategies"):
-    col1, col2 = st.columns(2)
-    with col1:
-        st.markdown("### 🕒 Intraday Strategy")
+# ===== Streamlit UI =====
+st.title("📊 OPTIONS STRATEGY WIZARD + GREEKS")
+
+tab1, tab2 = st.tabs(["📈 Strategy Wizard", "📉 Greeks Calculator"])
+
+# --- Tab 1: Strategy Wizard ---
+with tab1:
+    st.subheader("🎯 Strategy Based on Sentiments")
+    index = st.selectbox("Index", ["NIFTY", "BANKNIFTY", "SENSEX"])
+    strength = st.number_input("Strength", min_value=0.0, max_value=100.0, step=0.1)
+    vega = st.selectbox("Vega Sentiment", ["Bullish", "Sideways", "Bearish"])
+    theta = st.selectbox("Theta Sentiment", ["Bullish", "Sideways", "Bearish"])
+    oi = st.selectbox("Open Interest (OI)", ["Bullish", "Sideways", "Bearish"])
+
+    if st.button("Suggest Options Strategies"):
+        st.subheader("🕒 Intraday Strategy")
         st.success(get_intraday_strategy(strength, vega, theta, oi))
-    with col2:
-        st.markdown("### 🏛️ Positional Strategy")
+
+        st.subheader("📅 Positional Strategy")
         st.info(get_positional_strategy(strength, vega, theta, oi))
 
-    rain(emoji="📈", font_size=25, falling_speed=5, animation_length="infinite")
+# --- Tab 2: Option Greeks ---
+with tab2:
+    st.subheader("🧠 Option Greeks Calculator")
+
+    col1, col2 = st.columns(2)
+    with col1:
+        option_type = st.selectbox("Option Type", ["Call", "Put"])
+        S = st.number_input("Spot Price", value=22000.0)
+        K = st.number_input("Strike Price", value=22200.0)
+    with col2:
+        T = st.number_input("Days to Expiry", value=7)
+        sigma = st.number_input("IV (%)", value=20.0) / 100
+        r = st.number_input("Risk-free Rate (%)", value=6.0) / 100
+
+    if st.button("Calculate Greeks"):
+        delta, gamma, vega, theta, rho = bs_greeks(option_type, S, K, T, r, sigma)
+        st.markdown(f"""
+        - 📈 **Delta**: `{delta}`
+        - 📉 **Gamma**: `{gamma}`
+        - 🌊 **Vega**: `{vega}`
+        - ⌛ **Theta**: `{theta}`
+        - 🏦 **Rho**: `{rho}`
+        """)
+
+        # Chart: Delta vs Strike
+        strike_range = np.arange(S - 500, S + 500, 50)
+        deltas = [bs_greeks(option_type, S, k, T, r, sigma)[0] for k in strike_range]
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(x=strike_range, y=deltas, mode='lines+markers', name='Delta vs Strike'))
+        fig.update_layout(title="📊 Delta vs Strike Price", xaxis_title="Strike", yaxis_title="Delta")
+        st.plotly_chart(fig, use_container_width=True)
 
 # --- Footer ---
 st.markdown("---")
-st.markdown(
-    "<center><small>Made with ❤️ by Neeraj Bhatia | Powered by Streamlit</small></center>",
-    unsafe_allow_html=True
-)
+st.markdown("<center><small>Made with ❤️ by Neeraj Bhatia | Streamlit + Python</small></center>", unsafe_allow_html=True)
