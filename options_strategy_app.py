@@ -8,6 +8,8 @@ st.title("📈 Option Strategy Analyzer with Greeks & Charts")
 st.markdown("### 🟢 Enter Option Sentiment Data")
 
 with st.form("input_form"):
+    index_choice = st.selectbox("Select Index", ["Nifty", "Nifty Bank", "Sensex"])
+
     col1 = st.columns(1)[0]
     strength = col1.number_input("Strength", min_value=0.0, step=0.1)
 
@@ -34,6 +36,7 @@ with st.form("input_form"):
 
 if submitted:
     st.markdown("### 🔎 Strategy Insights")
+    st.write(f"**Index**: {index_choice}")
     st.write(f"**Strength**: {strength}")
     st.write(f"**Vega**: {vega}")
     st.write(f"**Theta**: {theta}")
