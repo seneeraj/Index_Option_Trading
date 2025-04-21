@@ -28,6 +28,24 @@ def bs_greeks(option_type, S, K, T, r, sigma):
     rho = K * T * np.exp(-r * T) * (norm.cdf(d2) if option_type == 'Call' else -norm.cdf(-d2)) / 100
     return round(delta,4), round(gamma,4), round(vega,4), round(theta,4), round(rho,4)
 
+# ======= STRATEGY DECISION LOGIC =======
+def suggest_strategy(iv, spot, strike_diff, theta, vega):
+    if iv > 0.3:
+        if theta > 0:
+            return "🔹 Short Straddle or Short Strangle"
+        else:
+            return "🔹 Long Butterfly or Iron Condor"
+    elif iv < 0.15:
+        if vega > 0:
+            return "🔹 Long Straddle or Long Call"
+        else:
+            return "🔹 Debit Spread or Calendar Spread"
+    else:
+        if abs(strike_diff) <= 200:
+            return "🔹 Iron Fly or Short Iron Condor"
+        else:
+            return "🔹 Bull Call Spread or Bear Put Spread"
+
 # ======= STREAMLIT UI =======
 st.title("🧠 Options Strategy Pro")
 
@@ -46,6 +64,7 @@ if st.button("🧮 Calculate & Simulate"):
     # Greeks
     delta, gamma, vega, theta, rho = bs_greeks(option_type, S, K, T, r, sigma)
     price = bs_price(option_type, S, K, T, r, sigma)
+    strategy = suggest_strategy(sigma, S, K - S, theta, vega)
 
     st.markdown(f"""
     ### 📊 Option Metrics
@@ -55,6 +74,7 @@ if st.button("🧮 Calculate & Simulate"):
     - **Vega**: `{vega}`
     - **Theta**: `{theta}`
     - **Rho**: `{rho}`
+    - **📌 Suggested Strategy**: `{strategy}`
     """)
 
     # ===== PNL Simulation =====
