@@ -5,29 +5,6 @@ from scipy.stats import norm
 
 st.set_page_config(page_title="📊 Options Strategy Pro", layout="centered")
 
-# ======= BLACK SCHOLES CALCULATION =======
-def bs_price(option_type, S, K, T, r, sigma):
-    T = T / 365
-    d1 = (np.log(S / K) + (r + sigma ** 2 / 2.) * T) / (sigma * np.sqrt(T))
-    d2 = d1 - sigma * np.sqrt(T)
-    if option_type == 'Call':
-        price = S * norm.cdf(d1) - K * np.exp(-r * T) * norm.cdf(d2)
-    else:
-        price = K * np.exp(-r * T) * norm.cdf(-d2) - S * norm.cdf(-d1)
-    return price
-
-def bs_greeks(option_type, S, K, T, r, sigma):
-    T = T / 365
-    d1 = (np.log(S / K) + (r + sigma ** 2 / 2.) * T) / (sigma * np.sqrt(T))
-    d2 = d1 - sigma * np.sqrt(T)
-    delta = norm.cdf(d1) if option_type == 'Call' else -norm.cdf(-d1)
-    gamma = norm.pdf(d1) / (S * sigma * np.sqrt(T))
-    vega = S * norm.pdf(d1) * np.sqrt(T) / 100
-    theta = (-S * norm.pdf(d1) * sigma / (2 * np.sqrt(T)) -
-             r * K * np.exp(-r * T) * norm.cdf(d2 if option_type == 'Call' else -d2)) / 365
-    rho = K * T * np.exp(-r * T) * (norm.cdf(d2) if option_type == 'Call' else -norm.cdf(-d2)) / 100
-    return round(delta,4), round(gamma,4), round(vega,4), round(theta,4), round(rho,4)
-
 # ======= STRATEGY DECISION LOGIC =======
 def suggest_strategy(iv, spot, strike_diff, theta, vega):
     if iv > 0.3:
@@ -51,37 +28,37 @@ st.title("🧠 Options Strategy Pro")
 
 col1, col2 = st.columns(2)
 with col1:
-    option_type = st.selectbox("Option Type", ["Call", "Put"])
-    S = st.number_input("Spot Price", value=22000.0)
-    K = st.number_input("Strike Price", value=22200.0)
-    T = st.number_input("Days to Expiry", value=7)
-with col2:
-    sigma = st.number_input("IV (%)", value=20.0) / 100
-    r = st.number_input("Risk-free Rate (%)", value=6.0) / 100
+    iv = st.number_input("IV (Implied Volatility)", value=0.25, step=0.01)
+    spot = st.number_input("Spot Price", value=22000.0)
+    strike_price = st.number_input("Strike Price", value=22200.0)
     contracts = st.number_input("Lot Size (Qty)", value=50)
+with col2:
+    theta = st.number_input("Theta", value=-5.0, step=0.1)
+    vega = st.number_input("Vega", value=15.0, step=0.1)
+    delta = st.number_input("Delta", value=0.6, step=0.01)
+    gamma = st.number_input("Gamma", value=0.05, step=0.01)
 
-if st.button("🧮 Calculate & Simulate"):
-    # Greeks
-    delta, gamma, vega, theta, rho = bs_greeks(option_type, S, K, T, r, sigma)
-    price = bs_price(option_type, S, K, T, r, sigma)
-    strategy = suggest_strategy(sigma, S, K - S, theta, vega)
+if st.button("🔍 Suggest Best Strategy"):
+    strike_diff = strike_price - spot
+    strategy = suggest_strategy(iv, spot, strike_diff, theta, vega)
 
     st.markdown(f"""
-    ### 📊 Option Metrics
-    - **Premium**: `{round(price,2)}`
-    - **Delta**: `{delta}`
-    - **Gamma**: `{gamma}`
-    - **Vega**: `{vega}`
-    - **Theta**: `{theta}`
-    - **Rho**: `{rho}`
-    - **📌 Suggested Strategy**: `{strategy}`
+    ### 📌 Strategy Suggestion
+    - **📍 IV**: `{iv}`
+    - **📉 Theta**: `{theta}`
+    - **📈 Vega**: `{vega}`
+    - **⚡ Delta**: `{delta}`
+    - **🎯 Gamma**: `{gamma}`
+    - **💡 Suggested Strategy**: `{strategy}`
     """)
 
     # ===== PNL Simulation =====
-    price_range = np.linspace(S * 0.9, S * 1.1, 50)
+    price_range = np.linspace(spot * 0.9, spot * 1.1, 50)
     pnl = []
     for s in price_range:
-        payoff = bs_price(option_type, s, K, T, r, sigma) - price
+        move = (s - strike_price)
+        premium = vega * (iv * 100) - theta
+        payoff = move - premium if delta > 0 else -move - premium
         pnl.append(payoff * contracts)
 
     fig1 = go.Figure()
@@ -90,10 +67,10 @@ if st.button("🧮 Calculate & Simulate"):
     st.plotly_chart(fig1, use_container_width=True)
 
     # ===== Volatility Smile =====
-    strike_range = np.arange(S - 1000, S + 1000, 100)
+    strike_range = np.arange(spot - 1000, spot + 1000, 100)
     ivs = []
     for k in strike_range:
-        imp_vol = sigma + 0.02 * np.abs(k - S) / S  # Simple smile logic
+        imp_vol = iv + 0.02 * np.abs(k - spot) / spot  # Simple smile logic
         ivs.append(imp_vol * 100)
 
     fig2 = go.Figure()
