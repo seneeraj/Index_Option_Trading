@@ -8,31 +8,26 @@ st.title("📈 Option Strategy Analyzer with Greeks & Charts")
 st.markdown("### 🟢 Enter Option Sentiment Data")
 
 with st.form("input_form"):
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        strength = st.number_input("Strength", min_value=0.0, step=0.1)
-    with col2:
-        cmp = st.number_input("CMP", min_value=0.0, step=0.1)
-    with col3:
-        change = st.number_input("Change", min_value=0.0, step=0.1)
+    col1 = st.columns(1)[0]
+    strength = col1.number_input("Strength", min_value=0.0, step=0.1)
 
-    col4, col5, col6 = st.columns(3)
-    with col4:
+    col2, col3, col4 = st.columns(3)
+    with col2:
         vega = st.selectbox("Vega", ["Bullish", "Sideways", "Bearish"])
-    with col5:
+    with col3:
         theta = st.selectbox("Theta", ["Bullish", "Sideways", "Bearish"])
-    with col6:
-        oi = st.selectbox("OI", ["Bullish", "Sideways", "Bearish"])
+    with col4:
+        oi = st.selectbox("Open Interest (OI)", ["Bullish", "Sideways", "Bearish"])
 
     st.markdown("### ⚙️ Option Greeks")
-    col7, col8, col9, col10 = st.columns(4)
-    with col7:
+    col5, col6, col7, col8 = st.columns(4)
+    with col5:
         delta = st.slider("Delta", -1.0, 1.0, 0.5)
-    with col8:
+    with col6:
         gamma = st.slider("Gamma", 0.0, 1.0, 0.1)
-    with col9:
+    with col7:
         theta_greek = st.slider("Theta (Greek)", -10.0, 0.0, -2.0)
-    with col10:
+    with col8:
         vega_greek = st.slider("Vega (Greek)", 0.0, 2.0, 0.5)
 
     submitted = st.form_submit_button("🔍 Analyze Strategy")
@@ -40,11 +35,9 @@ with st.form("input_form"):
 if submitted:
     st.markdown("### 🔎 Strategy Insights")
     st.write(f"**Strength**: {strength}")
-    st.write(f"**CMP**: ₹{cmp}")
-    st.write(f"**Change**: ₹{change}")
     st.write(f"**Vega**: {vega}")
     st.write(f"**Theta**: {theta}")
-    st.write(f"**OI**: {oi}")
+    st.write(f"**Open Interest**: {oi}")
 
     if vega == "Bullish" and theta == "Sideways" and oi == "Bullish":
         st.success("📌 Intraday Suggestion: Long Straddle or Bull Call Spread")
@@ -57,6 +50,7 @@ if submitted:
 
     st.markdown("---")
     st.subheader("💸 PnL Simulation")
+    cmp = 24000  # Default CMP for payoff simulation
     strikes = np.arange(cmp - 500, cmp + 500, 50)
     pnl = np.maximum(strikes - cmp, 0) - 100  # Simplified payoff
     fig = go.Figure()
