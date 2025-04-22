@@ -3,12 +3,29 @@ import plotly.graph_objs as go
 import numpy as np
 from scipy.stats import norm
 
-st.set_page_config(page_title="📊 Option Strategy Analyzer", layout="centered")
+st.set_page_config(page_title="📊 Option Strategy Analyzer", layout="wide")
 st.title("📈 Option Strategy Analyzer with Greeks & Charts")
+
+# Custom CSS for better UI
+st.markdown("""
+    <style>
+    .stButton button {
+        background-color: #4CAF50;
+        color: white;
+        font-size: 18px;
+        border-radius: 10px;
+    }
+    .stMetric {
+        background-color: #f0f2f6;
+        padding: 10px;
+        border-radius: 10px;
+    }
+    </style>
+""", unsafe_allow_html=True)
 
 # Function to calculate option Greeks using Black-Scholes Model
 def calculate_greeks(S, K, T_days, r, sigma, option_type='call'):
-    T = T_days / 365.0 if T_days > 0 else 0.0001  # prevent divide by zero
+    T = T_days / 365.0 if T_days > 0 else 0.0001
     d1 = (np.log(S / K + 1e-9) + (r + sigma ** 2 / 2.) * T) / (sigma * np.sqrt(T) + 1e-9)
     d2 = d1 - sigma * np.sqrt(T)
 
@@ -19,26 +36,28 @@ def calculate_greeks(S, K, T_days, r, sigma, option_type='call'):
 
     return round(delta, 4), round(gamma, 4), round(theta, 4), round(vega, 4)
 
-st.markdown("### 🟢 Enter Option Sentiment Data")
-
 with st.form("input_form"):
+    st.markdown("### 🟢 Enter Option Sentiment Data")
+
     index_choice = st.selectbox("Select Index", ["Nifty", "Nifty Bank", "Sensex"])
+    strength = st.number_input("Strength", value=0.0, step=0.1, format="%.2f")
 
-    strength = st.number_input("Strength", min_value=-100.0, step=0.1)
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        vega_sentiment = st.selectbox("🌀 Vega Sentiment", ["Bullish", "Sideways", "Bearish", "No View"])
+    with col2:
+        theta_sentiment = st.selectbox("⏳ Theta Sentiment", ["Bullish", "Sideways", "Bearish", "No View"])
+    with col3:
+        oi_sentiment = st.selectbox("📊 OI Sentiment", ["Bullish", "Sideways", "Bearish", "No View"])
 
-    vega_sentiment = st.selectbox("Vega", ["Bullish", "Sideways", "Bearish", "No View"])
-    theta_sentiment = st.selectbox("Theta", ["Bullish", "Sideways", "Bearish", "No View"])
-    oi_sentiment = st.selectbox("Open Interest (OI)", ["Bullish", "Sideways", "Bearish", "No View"])
-
-
-    st.markdown("### ⚙️ Option Inputs for Greeks (Optional)")
-    S = st.number_input("Spot Price (S)", value=0, step=50)
-    K = st.number_input("Strike Price (K)", value=0, step=50)
-    T_days = st.number_input("Time to Expiry (in days)", value=0)
-    r = st.number_input("Risk-free Rate (r, %)", value=10.0) / 100
-    sigma = st.number_input("Volatility (VIX, %)", value=10.0) / 100
-    option_type = st.selectbox("Option Type", ["call", "put"])
-    trade_action = st.selectbox("Trade Action", ["buy", "sell"])
+    with st.expander("⚙️ Advanced Option Inputs", expanded=False):
+        S = st.number_input("Spot Price (S)", value=0, step=50)
+        K = st.number_input("Strike Price (K)", value=0, step=50)
+        T_days = st.number_input("Time to Expiry (in days)", value=0)
+        r = st.number_input("Risk-free Rate (r, %)", value=10.0) / 100
+        sigma = st.number_input("Volatility (VIX, %)", value=10.0) / 100
+        option_type = st.selectbox("Option Type", ["call", "put"])
+        trade_action = st.selectbox("Trade Action", ["buy", "sell"])
 
     submitted = st.form_submit_button("🔍 Analyze Strategy")
 
@@ -55,11 +74,15 @@ if submitted:
     st.write(f"**Vega Sentiment**: {vega_sentiment}")
     st.write(f"**Theta Sentiment**: {theta_sentiment}")
     st.write(f"**Open Interest**: {oi_sentiment}")
-    st.write("### 📉 Calculated Greeks")
-    st.write(f"**Delta**: {delta}, **Gamma**: {gamma}, **Theta**: {theta}, **Vega**: {vega}")
+
+    st.subheader("📊 Greeks Snapshot")
+    col1, col2, col3, col4 = st.columns(4)
+    col1.metric("Delta", delta)
+    col2.metric("Gamma", gamma)
+    col3.metric("Theta", theta)
+    col4.metric("Vega", vega)
 
     st.subheader("🧠 Suggested Strategies")
-    
     if "No View" in [vega_sentiment, theta_sentiment, oi_sentiment]:
         st.info("📌 No strong sentiment provided. Consider neutral or hedged strategies like Iron Condor, Calendar Spread, or Covered Call.")
     else:
@@ -78,6 +101,7 @@ if submitted:
         else:
             st.warning("📌 Strategy: Use Delta-Neutral or Risk-defined Spreads for Intraday")
             st.info("📌 Positional Suggestion: Covered Call or Butterfly Spread")
+
     st.markdown("---")
     st.subheader("💸 PnL Simulation")
     strikes = np.arange(S - 500, S + 500, 50) if S > 0 else np.arange(20000, 26000, 50)
