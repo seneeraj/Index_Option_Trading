@@ -26,9 +26,10 @@ with st.form("input_form"):
 
     strength = st.number_input("Strength", min_value=-100.0, step=0.1)
 
-    vega_sentiment = st.selectbox("Vega", ["Bullish", "Sideways", "Bearish"])
-    theta_sentiment = st.selectbox("Theta", ["Bullish", "Sideways", "Bearish"])
-    oi_sentiment = st.selectbox("Open Interest (OI)", ["Bullish", "Sideways", "Bearish"])
+    vega_sentiment = st.selectbox("Vega", ["Bullish", "Sideways", "Bearish", "No View"])
+    theta_sentiment = st.selectbox("Theta", ["Bullish", "Sideways", "Bearish", "No View"])
+    oi_sentiment = st.selectbox("Open Interest (OI)", ["Bullish", "Sideways", "Bearish", "No View"])
+
 
     st.markdown("### ⚙️ Option Inputs for Greeks (Optional)")
     S = st.number_input("Spot Price (S)", value=0, step=50)
@@ -58,6 +59,9 @@ if submitted:
     st.write(f"**Delta**: {delta}, **Gamma**: {gamma}, **Theta**: {theta}, **Vega**: {vega}")
 
     st.subheader("🧠 Suggested Strategies")
+    if "No View" in [vega_sentiment, theta_sentiment, oi_sentiment]:
+        st.info("📌 No strong sentiment provided. Consider neutral or hedged strategies like Iron Condor, Calendar Spread, or Covered Call.")
+    else:    
     if vega_sentiment == "Bullish" and theta_sentiment == "Sideways" and oi_sentiment == "Bullish":
         st.success("📌 Intraday Suggestion: Long Straddle or Bull Call Spread")
         st.info("📌 Positional Suggestion: Long Call or Call Ratio Backspread")
