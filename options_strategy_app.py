@@ -24,7 +24,7 @@ st.markdown("### 🟢 Enter Option Sentiment Data")
 with st.form("input_form"):
     index_choice = st.selectbox("Select Index", ["Nifty", "Nifty Bank", "Sensex"])
 
-    strength = st.number_input("Strength", min_value=0.0, step=0.1)
+    strength = st.number_input("Strength", min_value=-100.0, step=0.1)
 
     vega_sentiment = st.selectbox("Vega", ["Bullish", "Sideways", "Bearish"])
     theta_sentiment = st.selectbox("Theta", ["Bullish", "Sideways", "Bearish"])
