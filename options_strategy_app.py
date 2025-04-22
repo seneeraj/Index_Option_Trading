@@ -58,26 +58,26 @@ if submitted:
     st.write("### 📉 Calculated Greeks")
     st.write(f"**Delta**: {delta}, **Gamma**: {gamma}, **Theta**: {theta}, **Vega**: {vega}")
 
-    st.subheader("🧠 Suggested Strategies")
+        st.subheader("🧠 Suggested Strategies")
+
     if "No View" in [vega_sentiment, theta_sentiment, oi_sentiment]:
         st.info("📌 No strong sentiment provided. Consider neutral or hedged strategies like Iron Condor, Calendar Spread, or Covered Call.")
-    else:    
-    if vega_sentiment == "Bullish" and theta_sentiment == "Sideways" and oi_sentiment == "Bullish":
-        st.success("📌 Intraday Suggestion: Long Straddle or Bull Call Spread")
-        st.info("📌 Positional Suggestion: Long Call or Call Ratio Backspread")
-    elif vega_sentiment == "Sideways" and theta_sentiment == "Sideways":
-        st.info("📌 Intraday Suggestion: Iron Condor or Calendar Spread")
-        st.info("📌 Positional Suggestion: Short Strangle or Delta-Neutral Strategies")
-    elif vega_sentiment == "Bullish" and theta_sentiment == "Bullish":
-        st.success("📌 Intraday Suggestion: Debit Spread")
-        st.success("📌 Positional Suggestion: Long Call, Bull Call Spread, or Synthetic Long")
-    elif vega_sentiment == "Bearish" and theta_sentiment == "Bullish" and oi_sentiment == "Bearish":
-        st.warning("📌 Intraday Suggestion: Bear Put Spread")
-        st.warning("📌 Positional Suggestion: Protective Put or Bear Call Ladder")
     else:
-        st.warning("📌 Strategy: Use Delta-Neutral or Risk-defined Spreads for Intraday")
-        st.info("📌 Positional Suggestion: Covered Call or Butterfly Spread")
-
+        if vega_sentiment == "Bullish" and theta_sentiment == "Sideways" and oi_sentiment == "Bullish":
+            st.success("📌 Intraday Suggestion: Long Straddle or Bull Call Spread")
+            st.info("📌 Positional Suggestion: Long Call or Call Ratio Backspread")
+        elif vega_sentiment == "Sideways" and theta_sentiment == "Sideways":
+            st.info("📌 Intraday Suggestion: Iron Condor or Calendar Spread")
+            st.info("📌 Positional Suggestion: Short Strangle or Delta-Neutral Strategies")
+        elif vega_sentiment == "Bullish" and theta_sentiment == "Bullish":
+            st.success("📌 Intraday Suggestion: Debit Spread")
+            st.success("📌 Positional Suggestion: Long Call, Bull Call Spread, or Synthetic Long")
+        elif vega_sentiment == "Bearish" and theta_sentiment == "Bullish" and oi_sentiment == "Bearish":
+            st.warning("📌 Intraday Suggestion: Bear Put Spread")
+            st.warning("📌 Positional Suggestion: Protective Put or Bear Call Ladder")
+        else:
+            st.warning("📌 Strategy: Use Delta-Neutral or Risk-defined Spreads for Intraday")
+            st.info("📌 Positional Suggestion: Covered Call or Butterfly Spread")
     st.markdown("---")
     st.subheader("💸 PnL Simulation")
     strikes = np.arange(S - 500, S + 500, 50) if S > 0 else np.arange(20000, 26000, 50)
