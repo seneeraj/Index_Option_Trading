@@ -58,8 +58,8 @@ if submitted:
     st.write("### 📉 Calculated Greeks")
     st.write(f"**Delta**: {delta}, **Gamma**: {gamma}, **Theta**: {theta}, **Vega**: {vega}")
 
-        st.subheader("🧠 Suggested Strategies")
-
+    st.subheader("🧠 Suggested Strategies")
+    
     if "No View" in [vega_sentiment, theta_sentiment, oi_sentiment]:
         st.info("📌 No strong sentiment provided. Consider neutral or hedged strategies like Iron Condor, Calendar Spread, or Covered Call.")
     else:
